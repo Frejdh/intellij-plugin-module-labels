@@ -1,13 +1,13 @@
-package com.github.frejdh.intellijpluginmodulelabel
+package com.github.frejdh.intellij.plugin.modulelabel
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls
 import org.jetbrains.annotations.PropertyKey
 
 @NonNls
-private const val BUNDLE = "messages.MyBundle"
+private const val BUNDLE = "messages.en"
 
-object MyBundle : DynamicBundle(BUNDLE) {
+object Literals : DynamicBundle(BUNDLE) {
 
     @JvmStatic
     fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =

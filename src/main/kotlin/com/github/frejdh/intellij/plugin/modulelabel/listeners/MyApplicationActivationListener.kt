@@ -1,4 +1,4 @@
-package com.github.frejdh.intellijpluginmodulelabel.listeners
+package com.github.frejdh.intellij.plugin.modulelabel.listeners
 
 import com.intellij.openapi.application.ApplicationActivationListener
 import com.intellij.openapi.diagnostic.thisLogger

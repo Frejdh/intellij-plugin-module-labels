@@ -1,4 +1,4 @@
-package com.github.frejdh.intellijpluginmodulelabel
+package com.github.frejdh.intellij.plugin.modulelabel
 
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.openapi.components.service
@@ -6,7 +6,7 @@ import com.intellij.psi.xml.XmlFile
 import com.intellij.testFramework.TestDataPath
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.PsiErrorElementUtil
-import com.github.frejdh.intellijpluginmodulelabel.services.MyProjectService
+import com.github.frejdh.intellij.plugin.modulelabel.services.MyProjectService
 
 @TestDataPath("\$CONTENT_ROOT/src/test/testData")
 class MyPluginTest : BasePlatformTestCase() {

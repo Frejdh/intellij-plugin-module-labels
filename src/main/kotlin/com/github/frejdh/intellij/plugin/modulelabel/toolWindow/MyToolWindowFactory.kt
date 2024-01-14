@@ -1,4 +1,4 @@
-package com.github.frejdh.intellijpluginmodulelabel.toolWindow
+package com.github.frejdh.intellij.plugin.modulelabel.toolWindow
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -8,8 +8,8 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
-import com.github.frejdh.intellijpluginmodulelabel.MyBundle
-import com.github.frejdh.intellijpluginmodulelabel.services.MyProjectService
+import com.github.frejdh.intellij.plugin.modulelabel.Literals
+import com.github.frejdh.intellij.plugin.modulelabel.services.MyProjectService
 import javax.swing.JButton
 
 
@@ -32,12 +32,12 @@ class MyToolWindowFactory : ToolWindowFactory {
         private val service = toolWindow.project.service<MyProjectService>()
 
         fun getContent() = JBPanel<JBPanel<*>>().apply {
-            val label = JBLabel(MyBundle.message("randomLabel", "?"))
+            val label = JBLabel(Literals.message("randomLabel", "?"))
 
             add(label)
-            add(JButton(MyBundle.message("shuffle")).apply {
+            add(JButton(Literals.message("shuffle")).apply {
                 addActionListener {
-                    label.text = MyBundle.message("randomLabel", service.getRandomNumber())
+                    label.text = Literals.message("randomLabel", service.getRandomNumber())
                 }
             })
         }
