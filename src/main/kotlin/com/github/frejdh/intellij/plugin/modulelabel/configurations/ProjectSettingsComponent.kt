@@ -52,18 +52,19 @@ class ProjectSettingsComponent(project: Project) {
         return panel
     }
 
-    fun getColumnIndexOfMappingTableColumn(column: ColumnProperties): Int {
-        return TableUtils.getColumnIndexOfTableColumn(tableMappingsComponent.table, column)
+    private fun getTableColumnIndex(column: ColumnProperties): Int {
+        return ALL_MAPPING_COLUMNS.indexOf(column);
     }
 
-    fun setModuleMappingsInTable(labelByModuleMap: Map<String, String>) {
-        val moduleColumnIndex = getColumnIndexOfMappingTableColumn(COLUMN_MODULE)
-        val labelColumnIndex = getColumnIndexOfMappingTableColumn(COLUMN_LABEL)
+    private fun setLabelsInTableByMap(labelByModuleMap: Map<String, String>) {
+        val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
+        val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
+
         for (i in 0 until tableMappingsComponent.dataModel.rowCount) {
-            val rowModuleValue: String = tableMappingsComponent.dataModel.getValueAt(i, moduleColumnIndex).toString()
-            val mapLabelValue: String? = labelByModuleMap[rowModuleValue]
-            if (mapLabelValue != null) {
-                tableMappingsComponent.dataModel.setValueAt(mapLabelValue, i, labelColumnIndex)
+            val moduleValue: String = tableMappingsComponent.dataModel.getValueAt(i, moduleColumnIndex).toString()
+            val labelValue: String? = labelByModuleMap[moduleValue]
+            if (labelValue != null) {
+                tableMappingsComponent.dataModel.setValueAt(labelValue.trim(), i, labelColumnIndex)
             }
         }
     }
@@ -72,32 +73,35 @@ class ProjectSettingsComponent(project: Project) {
      * Set the user interface field values (probably coming from a persisted state)
      */
     fun setState(newState: ProjectSettingsState) {
-        setModuleMappingsInTable(newState.moduleMappings)
+        setLabelsInTableByMap(newState.labelByModuleMap)
     }
 
     /**
      * Get the state created/edited in the user interface
      */
     fun getState(): ProjectSettingsState {
-        val moduleMappings: MutableMap<String, String> = mutableMapOf()
+        val labelByModuleMap: MutableMap<String, String> = mutableMapOf()
         val mappingDataModel: TableModel = tableMappingsComponent.dataModel
-        val moduleColumnIndex = getColumnIndexOfMappingTableColumn(COLUMN_MODULE)
-        val labelColumnIndex = getColumnIndexOfMappingTableColumn(COLUMN_LABEL)
+        val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
+        val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
         for (row in 0 until mappingDataModel.rowCount) {
-            moduleMappings[mappingDataModel.getValueAt(row, moduleColumnIndex).toString()] = mappingDataModel.getValueAt(row, labelColumnIndex).toString()
+            labelByModuleMap[mappingDataModel.getValueAt(row, moduleColumnIndex).toString()] = mappingDataModel.getValueAt(row, labelColumnIndex).toString().trim()
         }
 
         val state = ProjectSettingsState(
-            moduleMappings = moduleMappings
+            labelByModuleMap = labelByModuleMap
         )
         return state
     }
 
     private fun createMappingTable(): TableComponent {
         val data: Array<Array<Any>> = Array(modules.size) { Array(ALL_MAPPING_COLUMNS.size) { "" } }
+        val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
+        val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
+
         modules.forEachIndexed { rowIndex, module ->
-            data[rowIndex][0] = module.name
-            data[rowIndex][1] = ""
+            data[rowIndex][moduleColumnIndex] = module.name
+            data[rowIndex][labelColumnIndex] = ""
         }
         return TableUtils.createTable(
             columns = ALL_MAPPING_COLUMNS,

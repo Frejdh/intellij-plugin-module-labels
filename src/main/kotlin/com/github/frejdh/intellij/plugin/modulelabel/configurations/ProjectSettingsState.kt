@@ -1,6 +1,5 @@
 package com.github.frejdh.intellij.plugin.modulelabel.configurations
 
-import com.github.frejdh.intellij.plugin.modulelabel.model.ModuleMapping
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
@@ -11,11 +10,11 @@ import org.jetbrains.annotations.NotNull
 
 
 @State(
-    name = "org.intellij.sdk.settings.AppSettingsState",
+    name = "org.intellij.sdk.settings.ModuleLabelSettingsState",
     storages = [Storage("module-labels.xml")]
 )
 @Service(Service.Level.PROJECT)
-class ProjectSettingsState(var moduleMappings: Map<String, String> = emptyMap()) : PersistentStateComponent<ProjectSettingsState> {
+class ProjectSettingsState(var labelByModuleMap: Map<String, String> = mutableMapOf()) : PersistentStateComponent<ProjectSettingsState> {
 
     companion object {
         fun getInstance(project: Project): ProjectSettingsState {

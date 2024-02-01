@@ -9,15 +9,17 @@
     <resource-bundle>messages.en</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.frejdh.intellij.plugin.modulelabel.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
 		<projectConfigurable parentId="tools"
 							 instance="com.github.frejdh.intellij.plugin.modulelabel.configurations.ProjectSettingsConfigurable"
 							 id="com.github.frejdh.intellij.plugin.modulelabel.configurations.ProjectSettingsConfigurable"
 							 displayName="Module Labels"
 							 nonDefaultProject="true"/>
-    </extensions>
+
+		<editorTabTitleProvider implementation="com.github.frejdh.intellij.plugin.modulelabel.tabeditor.LabelTabEditor"/>
+	</extensions>
 
     <applicationListeners>
         <listener class="com.github.frejdh.intellij.plugin.modulelabel.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
+
 </idea-plugin>
