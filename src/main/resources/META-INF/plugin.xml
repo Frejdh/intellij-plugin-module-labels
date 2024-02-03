@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>com.github.frejdh.intellij.plugin.modulelabel</id>
     <name>Module Labels</name>
-    <vendor>frejdh</vendor>
+    <vendor>Frejdh</vendor>
 
     <depends>com.intellij.modules.platform</depends>
 

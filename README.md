@@ -4,6 +4,41 @@
 [![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="src/main/resources/META-INF/pluginIcon_dark.svg" width="168">
+  <source media="(prefers-color-scheme: light)" srcset="src/main/resources/META-INF/pluginIcon.svg" width="168">
+  <img alt="Logo color changing depending on theme" src="./src/main/resources/META-INF/pluginIcon_dark.svg" width="168" style="width:auto;">
+</picture>
+
+<!-- Plugin description -->
+Have you ever had a multimodule/monorepo where file names are similar enough that you confuse them with another module's file?
+The intention with this simple and lightweight plugin is to enables the usage of using custom labels for your editor tabs that are based on the project's modules.
+
+For instance, let's say you have a frontend and backend module in a project. You want to consume an API that have the request/responses in similar named files.
+By setting the backend label as `BE`, and frontend label as `FE`, you have clear distinctions of which module your file belongs to in the editor tabs directly. 
+The default behavior of Intellij is to only show the module/folder if two files are opened with exactly the same name, at the same time.
+
+These module labels in the editor tabs also works with the Intellij's sortable editor tabs option. Meaning that the editor tabs can be ordered by its module too if the need exists.
+
+All of these options are configurable inside `Settings (CTRL+ALT+S) -> Tools -> Module Labels`.
+<!-- Plugin description end -->
+
+## Installation
+
+- Using the IDE built-in plugin system:
+
+  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "intellij-plugin-module-label"</kbd> >
+  <kbd>Install</kbd>
+
+- Manually:
+
+  Download the [latest release](https://github.com/Frejdh/intellij-plugin-module-label/releases/latest) and install it manually using
+  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+
+
+---
+Plugin based on the [IntelliJ Platform Plugin Template][template].
+
 ## Template ToDo list
 - [x] Create a new [IntelliJ Platform Plugin Template][template] project.
 - [ ] Get familiar with the [template documentation][template].
@@ -16,29 +51,6 @@
 - [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
 - [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
 
-<!-- Plugin description -->
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
-
-This specific section is a source for the [plugin.xml](/src/main/resources/META-INF/plugin.xml) file which will be extracted by the [Gradle](/build.gradle.kts) during the build process.
-
-To keep everything working, do not remove `<!-- ... -->` sections. 
-<!-- Plugin description end -->
-
-## Installation
-
-- Using the IDE built-in plugin system:
-  
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "intellij-plugin-module-label"</kbd> >
-  <kbd>Install</kbd>
-  
-- Manually:
-
-  Download the [latest release](https://github.com/Frejdh/intellij-plugin-module-label/releases/latest) and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
-
-
----
-Plugin based on the [IntelliJ Platform Plugin Template][template].
 
 [template]: https://github.com/JetBrains/intellij-platform-plugin-template
 [docs:plugin-description]: https://plugins.jetbrains.com/docs/intellij/plugin-user-experience.html#plugin-description-and-presentation
