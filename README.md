@@ -1,4 +1,4 @@
-# intellij-plugin-module-label
+# Module Labels for IntelliJ
 
 ![Build](https://github.com/Frejdh/intellij-plugin-module-label/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
