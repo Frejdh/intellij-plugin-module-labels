@@ -1,10 +1,12 @@
 package com.github.frejdh.intellij.plugin.modulelabel.tabeditor
 
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.ProjectSettingsState
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.impl.EditorTabTitleProvider
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.vfs.VirtualFile
 
 
@@ -23,7 +25,9 @@ class LabelTabEditor : EditorTabTitleProvider, DumbAware {
     }
 
     private fun getModuleForFile(project: Project, file: VirtualFile): com.intellij.openapi.module.Module? {
-        return ProjectFileIndex.getInstance(project).getModuleForFile(file)
+        return ApplicationManager.getApplication().runReadAction(Computable {
+            ProjectFileIndex.getInstance(project).getModuleForFile(file)
+        })
     }
 
 }
