@@ -99,7 +99,7 @@ class ProjectSettingsComponent(project: Project) {
         val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
         val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
 
-        modules.forEachIndexed { rowIndex, module ->
+        modules.sortedBy { it.name }.forEachIndexed { rowIndex, module ->
             data[rowIndex][moduleColumnIndex] = module.name
             data[rowIndex][labelColumnIndex] = ""
         }

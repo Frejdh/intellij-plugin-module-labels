@@ -1,26 +1,45 @@
 package com.github.frejdh.intellij.plugin.modulelabel.configurations.util
 
-import com.intellij.ui.components.JBScrollPane
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomScrollablePanel
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomTable
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.JBUI
+import java.awt.Insets
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import javax.swing.JComponent
 import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableColumnModel
+
 
 class TableUtils {
 
     companion object {
         fun createTable(columns: List<ColumnProperties>, predefinedCells: Array<Array<Any>> = Array(0) { Array(0) { "" } }, tableProperties: TableProperties = TableProperties()): TableComponent {
             val dataModel: DefaultTableModel = CustomTableModel(predefinedCells, columns)
-            val table: JBTable = JBTable(dataModel)
+
+            val table = CustomTable(dataModel)
             table.setShowGrid(tableProperties.showGrid)
             table.showVerticalLines = tableProperties.showVerticalLines
             table.showHorizontalLines = tableProperties.showHorizontalLines
-            table.emptyText.setText(tableProperties.emptyTableText)
+            table.emptyText.text = tableProperties.emptyTableText
             table.rowHeight = tableProperties.rowHeight
             table.tableHeader.reorderingAllowed = tableProperties.allowReorderColumnHeaders
+            table.fillsViewportHeight = true
+
+            val panel = CustomScrollablePanel(table)
+            panel.preferHeight = table.calculatedHeight
+
+//            // Resize panel according to the table size
+//            table.addComponentListener(object : ComponentAdapter() {
+//                override fun componentResized(e: ComponentEvent?) {
+//                    // TODO: Improve. For some reason the height property doesn't take the header into account
+//                    panel.preferHeight = table.calculatedHeight
+//                }
+//            })
 
             return TableComponent(
-                panel = JBScrollPane(table),
+                panel = panel,
                 table = table,
                 dataModel = dataModel
             )
