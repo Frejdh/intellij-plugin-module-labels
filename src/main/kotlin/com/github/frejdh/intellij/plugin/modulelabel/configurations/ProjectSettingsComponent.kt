@@ -5,6 +5,7 @@ import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.ColumnP
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.TableUtils
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.TableComponent
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.TableProperties
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.toArrayVariant
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modules
 import com.intellij.ui.IdeBorderFactory
@@ -17,34 +18,73 @@ import javax.swing.table.TableModel
 class ProjectSettingsComponent(project: Project) {
     private var modules: List<com.intellij.openapi.module.Module> = project.modules.asList();
     private var panel: JPanel
-    private var tableMappingsComponent: TableComponent = createMappingTable()
+    private var tableModuleMappingsComponent: TableComponent = createMappingTable(ALL_MODULE_MAPPING_COLUMNS) { data ->
+        modules.filterNot { it.name.isEmpty() }.sortedBy { it.name }.forEachIndexed { rowIndex, module ->
+            data.add(rowIndex, mutableListOf(
+                module.name, // Column 1
+                "" // Column 2
+            ))
+        }
+    }
+    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS)
 
     companion object {
+        const val COLUMN_ID_TARGET = "target"
+        const val COLUMN_ID_LABEL = "label"
+
         val COLUMN_MODULE = ColumnProperties(
-            columnName = "Module",
+            displayText = Literals.getMessage("table.column.module"),
+            id = COLUMN_ID_TARGET,
+            isEditableColumn = false
+        )
+        val COLUMN_DIRECTORY = ColumnProperties(
+            displayText = Literals.getMessage("table.column.directory"),
+            id = COLUMN_ID_TARGET,
             isEditableColumn = false
         )
         val COLUMN_LABEL = ColumnProperties(
-            columnName = "Label"
+            displayText = Literals.getMessage("table.column.label"),
+            id = COLUMN_ID_LABEL
         )
-        val ALL_MAPPING_COLUMNS: List<ColumnProperties> = listOf(
+        val ALL_MODULE_MAPPING_COLUMNS: List<ColumnProperties> = listOf(
             COLUMN_MODULE,
+            COLUMN_LABEL
+        )
+        val ALL_DIRECTORY_MAPPING_COLUMNS: List<ColumnProperties> = listOf(
+            COLUMN_DIRECTORY,
             COLUMN_LABEL
         )
     }
 
 
     init {
-        val projectSettingsPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(JBLabel(Literals.getMessage("settings.project.module-mapping.label")), tableMappingsComponent.panel, true)
-            .addTooltip(Literals.getMessage("settings.project.module-mapping.tooltip"))
+        val introSection = FormBuilder.createFormBuilder()
+            .addComponent(JBLabel(Literals.getMessage("settings.intro.label")))
+            .panel
+
+        // Module section
+        val modulePanel = FormBuilder.createFormBuilder()
+            .addComponent(tableModuleMappingsComponent.panel)
+            .addTooltip(Literals.getMessage("settings.mapping.tooltip"))
             .addComponentFillVertically(JPanel(), 0)
             .panel
-        projectSettingsPanel.border = IdeBorderFactory.createTitledBorder(Literals.getMessage("settings.project.label"))
+        modulePanel.border = IdeBorderFactory.createTitledBorder(Literals.getMessage("settings.mapping.module.label"))
+
+        // Directory section
+        val directoryPanel = FormBuilder.createFormBuilder()
+            .addComponent(tableDirectoryMappingsComponent.panel)
+            .addTooltip(Literals.getMessage("settings.mapping.tooltip"))
+            .addComponentFillVertically(JPanel(), 0)
+            .panel
+        directoryPanel.border = IdeBorderFactory.createTitledBorder(Literals.getMessage("settings.mapping.directory.label"))
+
+        val emptyPanel = JPanel()
 
         panel = FormBuilder.createFormBuilder()
-            .addComponent(projectSettingsPanel)
-            .addComponentFillVertically(JPanel(), 0)
+            .addComponent(introSection)
+            .addComponent(modulePanel)
+            .addComponent(directoryPanel)
+            .addComponentFillVertically(emptyPanel, 0)
             .panel
     }
 
@@ -52,60 +92,68 @@ class ProjectSettingsComponent(project: Project) {
         return panel
     }
 
-    private fun getTableColumnIndex(column: ColumnProperties): Int {
-        return ALL_MAPPING_COLUMNS.indexOf(column);
-    }
+    private fun setLabelsInTableByMap(table: TableComponent, labelsMap: Map<String, String>) {
+        val moduleColumnIndex = table.getTableColumnIndex(COLUMN_MODULE)
+        val labelColumnIndex = table.getTableColumnIndex(COLUMN_LABEL)
 
-    private fun setLabelsInTableByMap(labelByModuleMap: Map<String, String>) {
-        val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
-        val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
-
-        for (i in 0 until tableMappingsComponent.dataModel.rowCount) {
-            val moduleValue: String = tableMappingsComponent.dataModel.getValueAt(i, moduleColumnIndex).toString()
-            val labelValue: String? = labelByModuleMap[moduleValue]
+        for (i in 0 until table.dataModel.rowCount) {
+            val moduleValue: String = table.dataModel.getValueAt(i, moduleColumnIndex).toString()
+            val labelValue: String? = labelsMap[moduleValue]
             if (labelValue != null) {
-                tableMappingsComponent.dataModel.setValueAt(labelValue.trim(), i, labelColumnIndex)
+                table.dataModel.setValueAt(labelValue.trim(), i, labelColumnIndex)
             }
         }
     }
 
     /**
-     * Set the user interface field values (probably coming from a persisted state)
+     * Set the user interface field values (coming from a persisted state)
      */
     fun setState(newState: ProjectSettingsState) {
-        setLabelsInTableByMap(newState.labelByModuleMap)
+        setLabelsInTableByMap(tableModuleMappingsComponent, newState.labelByModuleMap)
+        setLabelsInTableByMap(tableDirectoryMappingsComponent, newState.labelByDirectoryMap)
     }
 
     /**
      * Get the state created/edited in the user interface
      */
     fun getState(): ProjectSettingsState {
-        val labelByModuleMap: MutableMap<String, String> = mutableMapOf()
-        val mappingDataModel: TableModel = tableMappingsComponent.dataModel
-        val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
-        val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
-        for (row in 0 until mappingDataModel.rowCount) {
-            labelByModuleMap[mappingDataModel.getValueAt(row, moduleColumnIndex).toString()] = mappingDataModel.getValueAt(row, labelColumnIndex).toString().trim()
-        }
-
-        val state = ProjectSettingsState(
-            labelByModuleMap = labelByModuleMap
+        return ProjectSettingsState(
+            labelByModuleMap = generateTableStateForLabels(tableModuleMappingsComponent),
+            labelByDirectoryMap = generateTableStateForLabels(tableDirectoryMappingsComponent)
         )
-        return state
     }
 
-    private fun createMappingTable(): TableComponent {
-        val data: Array<Array<Any>> = Array(modules.size) { Array(ALL_MAPPING_COLUMNS.size) { "" } }
-        val moduleColumnIndex = getTableColumnIndex(COLUMN_MODULE)
-        val labelColumnIndex = getTableColumnIndex(COLUMN_LABEL)
+    private fun generateTableStateForLabels(table: TableComponent): Map<String, String> {
+        val labelsStateFromTable: MutableMap<String, String> = mutableMapOf()
+        val mappingDataModel: TableModel = table.dataModel
+        val moduleColumnIndex = table.getTableColumnIndex(COLUMN_ID_TARGET)
+        val labelColumnIndex = table.getTableColumnIndex(COLUMN_ID_LABEL)
 
-        modules.sortedBy { it.name }.forEachIndexed { rowIndex, module ->
-            data[rowIndex][moduleColumnIndex] = module.name
-            data[rowIndex][labelColumnIndex] = ""
+        for (row in 0 until mappingDataModel.rowCount) {
+            labelsStateFromTable[mappingDataModel.getValueAt(row, moduleColumnIndex).toString()] = mappingDataModel.getValueAt(row, labelColumnIndex).toString().trim()
         }
+        return labelsStateFromTable
+    }
+
+    private fun createMappingTable(columns: List<ColumnProperties>, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
+        val data: MutableList<List<Any>> = mutableListOf()
+
+        dataModifier?.let {
+            it(data)
+
+            // Verify data matches the columns
+            val nrOfColumns = columns.size
+            data.forEach { rowData ->
+                val nrOfRowColumns = rowData.size
+                check(nrOfRowColumns == nrOfColumns) {
+                    "The data initialized must have the same amount of columns as the table definition. Expected $nrOfColumns, got $nrOfRowColumns"
+                }
+            }
+        }
+
         return TableUtils.createTable(
-            columns = ALL_MAPPING_COLUMNS,
-            predefinedCells = data,
+            columns = columns,
+            predefinedCells = data.toArrayVariant(),
             tableProperties = TableProperties(
                 rowHeight = 24
             )

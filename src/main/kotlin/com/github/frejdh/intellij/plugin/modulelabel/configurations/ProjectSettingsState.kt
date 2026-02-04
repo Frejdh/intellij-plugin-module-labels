@@ -14,7 +14,15 @@ import org.jetbrains.annotations.NotNull
     storages = [Storage("module-labels.xml")]
 )
 @Service(Service.Level.PROJECT)
-class ProjectSettingsState(var labelByModuleMap: Map<String, String> = mutableMapOf()) : PersistentStateComponent<ProjectSettingsState> {
+class ProjectSettingsState(
+    labelByModuleMap: Map<String, String> = mapOf(),
+    labelByDirectoryMap: Map<String, String> = mapOf()
+) : PersistentStateComponent<ProjectSettingsState> {
+
+    var labelByModuleMap = labelByModuleMap
+        private set
+    var labelByDirectoryMap = labelByDirectoryMap
+        private set
 
     companion object {
         fun getInstance(project: Project): ProjectSettingsState {
@@ -29,5 +37,23 @@ class ProjectSettingsState(var labelByModuleMap: Map<String, String> = mutableMa
     override fun loadState(state: @NotNull ProjectSettingsState) {
         XmlSerializerUtil.copyBean(state, this)
     }
+
+    fun resetState() {
+        labelByModuleMap = mapOf()
+        labelByDirectoryMap = mapOf()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other !is ProjectSettingsState) {
+            return false
+        }
+
+        return labelByModuleMap == other.labelByModuleMap
+    }
+
+    override fun hashCode(): Int {
+        return labelByModuleMap.hashCode()
+    }
+
 
 }

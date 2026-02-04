@@ -3,13 +3,8 @@ package com.github.frejdh.intellij.plugin.modulelabel.configurations.util
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomScrollablePanel
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomTable
 import com.intellij.ui.table.JBTable
-import com.intellij.util.ui.JBUI
-import java.awt.Insets
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
 import javax.swing.JComponent
 import javax.swing.table.DefaultTableModel
-import javax.swing.table.TableColumnModel
 
 
 class TableUtils {
@@ -41,18 +36,13 @@ class TableUtils {
             return TableComponent(
                 panel = panel,
                 table = table,
+                columns = columns,
                 dataModel = dataModel
             )
         }
 
         fun getColumnIndexOfTableColumn(table: JBTable, columnProperties: ColumnProperties): Int {
-            val columnModel: TableColumnModel = table.tableHeader.columnModel
-            for (i in 0 until columnModel.columnCount) {
-                if (columnModel.getColumn(i).headerValue == columnProperties.columnName) {
-                    return i
-                }
-            }
-            return -1
+            return table.getIndexOfTableColumn(columnProperties)
         }
 
         fun resetTableData(table: JBTable) {
@@ -65,13 +55,38 @@ class TableUtils {
 
 }
 
-data class TableComponent(
+class TableComponent(
     val panel: JComponent,
     val table: JBTable,
-    val dataModel: DefaultTableModel
-)
+    val dataModel: DefaultTableModel,
+    val columns: List<ColumnProperties>
+) {
 
-class CustomTableModel(private val predefinedCells: Array<Array<Any>>, private val columns: List<ColumnProperties>) : DefaultTableModel(predefinedCells, columns.map { it.columnName }.toTypedArray()) {
+    fun getTableColumnIndex(columnId: String): Int {
+        return table.getIndexOfTableColumn(columns.first { it.id == columnId })
+    }
+
+    fun getTableColumnIndex(column: ColumnProperties, vararg otherColumnCandidates: ColumnProperties): Int {
+        return table.getIndexOfTableColumn(column, *otherColumnCandidates)
+    }
+
+}
+
+fun JBTable.getIndexOfTableColumn(column: ColumnProperties, vararg otherColumnCandidates: ColumnProperties): Int {
+    val columnCandidates = listOf(column) + otherColumnCandidates.toList()
+
+    var i = 0
+    for (column in columnModel.columns) {
+        if (columnCandidates.any { it.displayText == column.headerValue?.toString() }) {
+            return i
+        }
+        i++
+    }
+
+    return -1
+}
+
+class CustomTableModel(private val predefinedCells: Array<Array<Any>>, private val columns: List<ColumnProperties>) : DefaultTableModel(predefinedCells, columns.map { it.displayText }.toTypedArray()) {
     override fun isCellEditable(row: Int, column: Int): Boolean {
         return columns[column].isEditableColumn
     }
@@ -85,5 +100,13 @@ data class TableProperties(val allowAddMore: Boolean = true,
                            val rowHeight: Int = 22,
                            val allowReorderColumnHeaders: Boolean = false)
 
-data class ColumnProperties(val columnName: String,
-                            val isEditableColumn: Boolean = true)
+data class ColumnProperties(
+    val displayText: String,
+    val id: String = displayText,
+    val isEditableColumn: Boolean = true
+)
+
+
+fun List<List<Any>>.toArrayVariant(): Array<Array<Any>> {
+    return this.map { it.toList().toTypedArray() }.toTypedArray()
+}
