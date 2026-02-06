@@ -48,11 +48,11 @@ class ProjectSettingsState(
             return false
         }
 
-        return labelByModuleMap == other.labelByModuleMap
+        return labelByModuleMap == other.labelByModuleMap && labelByDirectoryMap == other.labelByDirectoryMap
     }
 
     override fun hashCode(): Int {
-        return labelByModuleMap.hashCode()
+        return labelByModuleMap.hashCode() + labelByDirectoryMap.hashCode()
     }
 
 

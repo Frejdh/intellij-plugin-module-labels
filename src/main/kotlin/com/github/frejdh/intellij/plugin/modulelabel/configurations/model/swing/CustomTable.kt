@@ -1,14 +1,13 @@
 package com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing
 
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.CustomTableModel
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.util.preferredHeight
-import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableColumnModel
-import javax.swing.table.TableModel
 import kotlin.math.ceil
 import kotlin.math.max
 
-open class CustomTable(model: TableModel = DefaultTableModel(), columnModel: TableColumnModel? = null) : JBTable(model, columnModel) {
+open class CustomTable(model: CustomTableModel = CustomTableModel(), columnModel: TableColumnModel? = null) : JBTable(model, columnModel) {
     open val calculatedHeight: Int
         get() {
             // Height

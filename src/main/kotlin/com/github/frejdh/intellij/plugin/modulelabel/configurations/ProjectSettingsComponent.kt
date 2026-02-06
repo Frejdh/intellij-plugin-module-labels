@@ -1,11 +1,7 @@
 package com.github.frejdh.intellij.plugin.modulelabel.configurations
 
 import com.github.frejdh.intellij.plugin.modulelabel.Literals
-import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.ColumnProperties
-import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.TableUtils
-import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.TableComponent
-import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.TableProperties
-import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.toArrayVariant
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.*
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modules
 import com.intellij.ui.IdeBorderFactory
@@ -22,11 +18,13 @@ class ProjectSettingsComponent(project: Project) {
         modules.filterNot { it.name.isEmpty() }.sortedBy { it.name }.forEachIndexed { rowIndex, module ->
             data.add(rowIndex, mutableListOf(
                 module.name, // Column 1
-                "" // Column 2
+                "" // Column 2. Loaded later
             ))
         }
     }
-    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS)
+    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS, deleteRowButton = true) { data ->
+        data.add(mutableListOf("", ""))
+    }
 
     companion object {
         const val COLUMN_ID_TARGET = "target"
@@ -38,9 +36,9 @@ class ProjectSettingsComponent(project: Project) {
             isEditableColumn = false
         )
         val COLUMN_DIRECTORY = ColumnProperties(
-            displayText = Literals.getMessage("table.column.directory"),
+            displayText = Literals.getMessage("table.column.directory-or-pattern"),
             id = COLUMN_ID_TARGET,
-            isEditableColumn = false
+            isEditableColumn = true
         )
         val COLUMN_LABEL = ColumnProperties(
             displayText = Literals.getMessage("table.column.label"),
@@ -93,11 +91,11 @@ class ProjectSettingsComponent(project: Project) {
     }
 
     private fun setLabelsInTableByMap(table: TableComponent, labelsMap: Map<String, String>) {
-        val moduleColumnIndex = table.getTableColumnIndex(COLUMN_MODULE)
+        val targetColumnIndex = table.getTableColumnIndex(COLUMN_ID_TARGET)
         val labelColumnIndex = table.getTableColumnIndex(COLUMN_LABEL)
 
         for (i in 0 until table.dataModel.rowCount) {
-            val moduleValue: String = table.dataModel.getValueAt(i, moduleColumnIndex).toString()
+            val moduleValue: String = table.dataModel.getValueAt(i, targetColumnIndex).toString()
             val labelValue: String? = labelsMap[moduleValue]
             if (labelValue != null) {
                 table.dataModel.setValueAt(labelValue.trim(), i, labelColumnIndex)
@@ -126,16 +124,18 @@ class ProjectSettingsComponent(project: Project) {
     private fun generateTableStateForLabels(table: TableComponent): Map<String, String> {
         val labelsStateFromTable: MutableMap<String, String> = mutableMapOf()
         val mappingDataModel: TableModel = table.dataModel
-        val moduleColumnIndex = table.getTableColumnIndex(COLUMN_ID_TARGET)
+        val targetColumnIndex = table.getTableColumnIndex(COLUMN_ID_TARGET)
         val labelColumnIndex = table.getTableColumnIndex(COLUMN_ID_LABEL)
 
         for (row in 0 until mappingDataModel.rowCount) {
-            labelsStateFromTable[mappingDataModel.getValueAt(row, moduleColumnIndex).toString()] = mappingDataModel.getValueAt(row, labelColumnIndex).toString().trim()
+            val targetValue = mappingDataModel.getValueAt(row, targetColumnIndex).toString().trim()
+            val labelValue = mappingDataModel.getValueAt(row, labelColumnIndex).toString().trim()
+            labelsStateFromTable[targetValue] = labelValue
         }
         return labelsStateFromTable
     }
 
-    private fun createMappingTable(columns: List<ColumnProperties>, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
+    private fun createMappingTable(columns: List<ColumnProperties>, deleteRowButton: Boolean = false, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
         val data: MutableList<List<Any>> = mutableListOf()
 
         dataModifier?.let {
@@ -155,7 +155,8 @@ class ProjectSettingsComponent(project: Project) {
             columns = columns,
             predefinedCells = data.toArrayVariant(),
             tableProperties = TableProperties(
-                rowHeight = 24
+                rowHeight = 24,
+                deleteRowButton = deleteRowButton,
             )
         )
     }
