@@ -20,4 +20,15 @@ open class CustomTable(model: CustomTableModel = CustomTableModel(), columnModel
             return calculatedHeight
         }
 
+    open fun calculateHeight(nrOfRows: Int = rowCount): Int {
+        // Height
+        val headerHeight = tableHeader.preferredHeight
+        val allRowsHeight = (rowHeight * nrOfRows)
+        val spacing = ceil(max(intercellSpacing.height, 0) * (nrOfRows + 1) * 0.5).toInt()
+
+        // TODO: Improve the calculation. For some reason this seems to be difficult to do consistently
+        val calculatedHeight = headerHeight + allRowsHeight + spacing + 1
+        return calculatedHeight
+    }
+
 }

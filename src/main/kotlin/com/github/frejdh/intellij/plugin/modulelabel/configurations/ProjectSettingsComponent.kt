@@ -2,12 +2,14 @@ package com.github.frejdh.intellij.plugin.modulelabel.configurations
 
 import com.github.frejdh.intellij.plugin.modulelabel.Literals
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.*
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modules
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.FormBuilder
 import javax.swing.JPanel
+import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableModel
 
 
@@ -22,7 +24,7 @@ class ProjectSettingsComponent(project: Project) {
             ))
         }
     }
-    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS, deleteRowButton = true) { data ->
+    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS, deleteRowButton = true, tableHeightByNrOfRows = 4) { data ->
         data.add(mutableListOf("", ""))
     }
 
@@ -76,12 +78,22 @@ class ProjectSettingsComponent(project: Project) {
             .panel
         directoryPanel.border = IdeBorderFactory.createTitledBorder(Literals.getMessage("settings.mapping.directory.label"))
 
+        val addDirectoryTableRowButton = FormBuilder.createFormBuilder()
+            .addComponent(
+                CustomButton(id = "add-directory", displayText = "Add Directory") {
+                    thisLogger().debug("Adding new row to the directory table")
+                    val model = tableDirectoryMappingsComponent.table.model as DefaultTableModel
+                    model.addRow(ALL_DIRECTORY_MAPPING_COLUMNS.map { "" }.toTypedArray())
+                }.button
+            ).panel
+
         val emptyPanel = JPanel()
 
         panel = FormBuilder.createFormBuilder()
             .addComponent(introSection)
             .addComponent(modulePanel)
             .addComponent(directoryPanel)
+            .addComponent(addDirectoryTableRowButton)
             .addComponentFillVertically(emptyPanel, 0)
             .panel
     }
@@ -135,7 +147,7 @@ class ProjectSettingsComponent(project: Project) {
         return labelsStateFromTable
     }
 
-    private fun createMappingTable(columns: List<ColumnProperties>, deleteRowButton: Boolean = false, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
+    private fun createMappingTable(columns: List<ColumnProperties>, deleteRowButton: Boolean = false, tableHeightByNrOfRows: Int? = null, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
         val data: MutableList<List<Any>> = mutableListOf()
 
         dataModifier?.let {
@@ -157,6 +169,7 @@ class ProjectSettingsComponent(project: Project) {
             tableProperties = TableProperties(
                 rowHeight = 24,
                 deleteRowButton = deleteRowButton,
+                tableHeightByNrOfRows = tableHeightByNrOfRows
             )
         )
     }

@@ -3,16 +3,14 @@ package com.github.frejdh.intellij.plugin.modulelabel.configurations.util
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomScrollablePanel
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomTable
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.table.JBTable
+import com.intellij.ui.util.maximumHeight
 import com.intellij.util.ui.JBUI
-import com.sun.java.accessibility.util.AWTEventMonitor.addActionListener
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
-import java.awt.event.MouseEvent
 import javax.swing.*
 import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableCellRenderer
@@ -50,16 +48,19 @@ class TableUtils {
                 val preferredSize = Dimension(24, 24)
                 val column = columnModel.getColumn(deleteActionColumnIndex)
                 val button = column.installCustomButtonRenderer(
-                    model = model,
+                    id = "delete-row",
+                    tableModel = model,
                     displayText = "",
                     icon = AllIcons.General.Delete,
                     tooltipText = "Delete row",
                     preferredSize = preferredSize
                 ) {
-                    val modelRow = it.getActionCommand().toInt()
+                    val modelRow = if (it is TableCellActionEvent) { it.row } else it.getActionCommand().toIntOrNull() ?: 0
                     model.removeRow(modelRow)
+                    table.repaint()
+                    table.revalidate()
                 }
-                button.renderer.actionOnKey(KeyEvent.VK_DELETE)
+                button.button.actionOnKey(KeyEvent.VK_DELETE)
 
                 // Adjust the column size. Add one extra pixel to avoid the "shifting" during highlight
                 val columnWidth = preferredSize.width + 1
@@ -69,7 +70,10 @@ class TableUtils {
             }
 
             val panel = CustomScrollablePanel(table)
-            panel.preferHeight = table.calculatedHeight
+            panel.preferHeight = table.calculateHeight(tableProperties.tableHeightByNrOfRows ?: table.rowCount)
+            if (tableProperties.tableMaxHeightByNrOfRows != null) {
+                panel.maximumHeight = table.calculateHeight(tableProperties.tableMaxHeightByNrOfRows ?: table.rowCount)
+            }
 
 //            // Resize panel according to the table size
 //            table.addComponentListener(object : ComponentAdapter() {
@@ -148,6 +152,8 @@ data class TableProperties(
     val allowReorderColumnHeaders: Boolean = false,
     val deleteRowButton: Boolean = false,
     val initializeWithEmptyRow: Boolean = false,
+    val tableHeightByNrOfRows: Int? = null,
+    val tableMaxHeightByNrOfRows: Int? = null,
 )
 
 data class ColumnProperties(
@@ -161,8 +167,13 @@ fun List<List<Any>>.toArrayVariant(): Array<Array<Any>> {
     return this.map { it.toList().toTypedArray() }.toTypedArray()
 }
 
+open class TableCellActionEvent(source: Any, val actionId: Int, buttonId: String, val row: Int, val column: Int) : ActionEvent(source, actionId, buttonId) {
+
+}
+
 open class CustomButton(
-    protected open val model: DefaultTableModel,
+    open val id: String,
+    protected val tableModel: DefaultTableModel? = null, // Required when put inside tables
     open val displayText: String = "",
     open val icon: Icon? = null,
     open val iconHover: Icon? = icon,
@@ -173,8 +184,8 @@ open class CustomButton(
     open val horizontalAlignment: Int = SwingConstants.CENTER,
     open val onClick: (ActionEvent) -> Unit
 ) {
-    val renderer: ButtonRenderer = ButtonRenderer(model, displayText)
-    val editor: ButtonEditor = ButtonEditor(model)
+    val button: ButtonRenderer = ButtonRenderer(displayText)
+    val tableCellEditor: ButtonTableCellEditor = ButtonTableCellEditor()
 
     protected open fun styleCellComponent(
         component: JButton,
@@ -200,12 +211,8 @@ open class CustomButton(
         // Change icon color based on selection state if desired
         if (hasFocus) {
             component.icon = iconHover
-            component.background = table?.selectionBackground
-            component.foreground = table?.selectionForeground
         } else {
             component.icon = icon
-            component.background = table?.background
-            component.foreground = table?.foreground
         }
 
         // Enable/disable based on some condition if needed
@@ -213,35 +220,29 @@ open class CustomButton(
         return component
     }
 
-    private fun deleteRow(row: Int) {
-        (model).removeRow(row)
+    open fun getEmptyLabel(table: JTable?): JLabel {
+        // Return non-editable cell for non-existent rows
+        return JLabel().apply {
+            background = table?.background ?: UIManager.getColor("Table.background")
+            isOpaque = true
+            border = BorderFactory.createEmptyBorder()
+        }
     }
 
-    protected fun addHoverMouseListener(component: JButton, row: () -> Int) {
-        // Hover effect
-        component.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
-                deleteRow(row())
-            }
-
-            override fun mouseEntered(e: MouseEvent?) {
-                component.isBorderPainted = true
-                component.isContentAreaFilled = true
-            }
-
-            override fun mouseExited(e: MouseEvent?) {
-                component.isBorderPainted = false
-                component.isContentAreaFilled = false
-            }
-        })
-    }
-
-    // Custom renderer for delete button
-    open inner class ButtonRenderer(protected open val model: DefaultTableModel, open val displayText: String) : JButton(displayText), TableCellRenderer {
-        private var currentRow = -1
+    // Custom renderer for buttons (outside tables)
+    open inner class ButtonRenderer(open val displayText: String) : JButton(displayText), TableCellRenderer {
         init {
-            addActionListener {
-                thisLogger().warn("CLICKED!!!!!!")
+            // Make it non-focusable to avoid keyboard navigation issues
+            isFocusable = false
+
+            // FIXME: CAUSES RECURSIVE LOOP!
+            // Set up click handlers, but only when not located inside the table
+            if (tableModel == null) {
+                val actionListener: (ActionEvent) -> Unit = {
+                    onClick(ActionEvent(this, ActionEvent.ACTION_PERFORMED, id))
+                }
+
+                addActionListener(actionListener)
             }
         }
 
@@ -261,9 +262,17 @@ open class CustomButton(
             row: Int,
             column: Int
         ): Component {
-            currentRow = row
-            addHoverMouseListener(this) { currentRow }
+            checkNotNull(tableModel) { "Model is required for table usages" }
 
+            // Check if row exists
+            val rowExists = tableModel.rowCount > 0 && row >= 0 && row < tableModel.rowCount
+
+            if (!rowExists) {
+                // Return empty cell for non-existent rows
+                return getEmptyLabel(table)
+            }
+
+            // Apply styling
             return styleCellComponent(
                 component = this,
                 table = table,
@@ -274,18 +283,25 @@ open class CustomButton(
                 column = column
             )
         }
+
+
     }
 
-    // Custom editor for delete button
-    open inner class ButtonEditor(protected open val model: DefaultTableModel, open val checkBox: JCheckBox = JBCheckBox()) : DefaultCellEditor(checkBox) {
-        private val button = JButton(displayText)
+    // Custom editor for buttons inside table cells
+    open inner class ButtonTableCellEditor(open val checkBox: JCheckBox = JBCheckBox()) : DefaultCellEditor(checkBox) {
         private var currentRow = -1
+        private var currentColumn = -1
+
+        val actionListener: (ActionEvent) -> Unit = {
+            if (tableModel != null && currentRow >= 0 && currentRow < tableModel.rowCount) {
+                fireEditingStopped()
+                onClick(TableCellActionEvent(button, ActionEvent.ACTION_PERFORMED, id, currentRow, currentColumn))
+            }
+        }
 
         init {
-            addActionListener {
-                onClick(it)
-            }
-
+            button.isOpaque = true
+            button.isFocusable = false
         }
 
         override fun getTableCellEditorComponent(
@@ -295,7 +311,23 @@ open class CustomButton(
             row: Int,
             column: Int
         ): Component {
+            checkNotNull(tableModel) { "Model is required for table usages" }
+
+            // Check if row exists
+            val rowExists = tableModel.rowCount > 0 && row >= 0 && row < tableModel.rowCount
+
+            if (tableModel.rowCount == 0 || !rowExists) {
+                // Return non-editable cell for non-existent rows
+                return getEmptyLabel(table)
+            }
+
             currentRow = row
+            currentColumn = column
+
+            // Set up click handlers
+            button.actionListeners.forEach { button.removeActionListener(it) }
+            button.addActionListener(actionListener)
+
             return styleCellComponent(
                 component = button,
                 table = table,
@@ -306,18 +338,21 @@ open class CustomButton(
             )
         }
 
-        override fun getCellEditorValue(): Any {
-            // Delete the row when button is clicked
-            if (currentRow >= 0) {
-                (model).removeRow(currentRow)
-            }
-            return displayText
+        override fun getCellEditorValue(): Any = displayText
+
+        override fun stopCellEditing(): Boolean {
+            return if (currentRow >= 0 && currentRow < (tableModel?.rowCount ?: 0)) {
+                currentRow = -1
+                currentColumn = -1
+                super.stopCellEditing()
+            } else true
         }
     }
 }
 
 fun TableColumn.installCustomButtonRenderer(
-    model: DefaultTableModel,
+    id: String,
+    tableModel: DefaultTableModel,
     displayText: String = "",
     icon: Icon? = null,
     iconHover: Icon? = icon,
@@ -329,7 +364,8 @@ fun TableColumn.installCustomButtonRenderer(
     onClick: (ActionEvent) -> Unit
     ): CustomButton {
     val customButton = CustomButton(
-        model = model,
+        id = id,
+        tableModel = tableModel,
         displayText = displayText,
         icon = icon,
         iconHover = iconHover,
@@ -340,8 +376,8 @@ fun TableColumn.installCustomButtonRenderer(
         preferredSize = preferredSize,
         onClick = onClick
     )
-    cellRenderer = customButton.renderer
-    cellEditor = customButton.editor
+    cellRenderer = customButton.button
+    cellEditor = customButton.tableCellEditor
 
     return customButton
 }
