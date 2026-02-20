@@ -158,3 +158,10 @@ intellijPlatformTesting {
         }
     }
 }
+
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
+}

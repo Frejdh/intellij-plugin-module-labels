@@ -10,16 +10,12 @@
 
     <extensions defaultExtensionNs="com.intellij">
 		<projectConfigurable parentId="tools"
-							 instance="com.github.frejdh.intellij.plugin.modulelabel.configurations.ProjectSettingsConfigurable"
-							 id="com.github.frejdh.intellij.plugin.modulelabel.configurations.ProjectSettingsConfigurable"
+							 instance="com.github.frejdh.intellij.plugin.modulelabel.configurations.SettingsConfigurable"
+							 id="com.github.frejdh.intellij.plugin.modulelabel.configurations.SettingsConfigurable"
 							 displayName="Module Labels"
 							 nonDefaultProject="true"/>
 
 		<editorTabTitleProvider implementation="com.github.frejdh.intellij.plugin.modulelabel.tabeditor.LabelTabEditor"/>
 	</extensions>
-
-    <applicationListeners>
-        <listener class="com.github.frejdh.intellij.plugin.modulelabel.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
-    </applicationListeners>
 
 </idea-plugin>
