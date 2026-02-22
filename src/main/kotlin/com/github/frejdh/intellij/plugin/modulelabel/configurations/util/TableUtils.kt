@@ -2,6 +2,8 @@ package com.github.frejdh.intellij.plugin.modulelabel.configurations.util
 
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomScrollablePanel
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.CustomTable
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing.ReorderTableRowMouseHandler
+import com.github.frejdh.intellij.plugin.modulelabel.extensions.ifTrue
 import com.intellij.icons.AllIcons
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.table.JBTable
@@ -43,6 +45,7 @@ class TableUtils {
             table.rowHeight = tableProperties.rowHeight
             table.tableHeader.reorderingAllowed = tableProperties.allowReorderColumnHeaders
             table.fillsViewportHeight = true
+            table.rowSelectionAllowed = tableProperties.rowSelectionEnabled
 
             if (tableProperties.deleteRowButton) {
                 val preferredSize = Dimension(24, 24)
@@ -82,6 +85,14 @@ class TableUtils {
 //                    panel.preferHeight = table.calculatedHeight
 //                }
 //            })
+
+            tableProperties.reorderRowsWithDragAndDrop.ifTrue {
+                table.dragEnabled = true
+                table.dropMode = DropMode.INSERT_ROWS
+                val listener = ReorderTableRowMouseHandler(table, model)
+                table.addMouseListener(listener)
+                table.addMouseMotionListener(listener)
+            }
 
             return TableComponent(
                 panel = panel,
@@ -154,6 +165,8 @@ data class TableProperties(
     val initializeWithEmptyRow: Boolean = false,
     val tableHeightByNrOfRows: Int? = null,
     val tableMaxHeightByNrOfRows: Int? = null,
+    val rowSelectionEnabled: Boolean = false,
+    val reorderRowsWithDragAndDrop: Boolean = false,
 )
 
 data class ColumnProperties(

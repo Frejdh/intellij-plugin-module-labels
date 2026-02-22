@@ -29,7 +29,7 @@ class SettingsComponent(project: Project) {
             ))
         }
     }
-    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS, deleteRowButton = true, tableHeightByNrOfRows = 4) { data ->
+    private var tableDirectoryMappingsComponent: TableComponent = createMappingTable(ALL_DIRECTORY_MAPPING_COLUMNS, deleteRowButton = true, reorderRows = true, tableHeightByNrOfRows = 4) { data ->
         data.add(mutableListOf("", ""))
     }
 
@@ -77,6 +77,7 @@ class SettingsComponent(project: Project) {
 
         // Directory section
         val directoryPanel = FormBuilder.createFormBuilder()
+            .addComponent(JBLabel(Literals.getMessage("settings.mapping.directory.usage-hint")))
             .addComponent(tableDirectoryMappingsComponent.panel)
             .addTooltip(Literals.getMessage("settings.mapping.directory.tooltip"))
             .addComponentFillVertically(JPanel(), 0)
@@ -179,7 +180,7 @@ class SettingsComponent(project: Project) {
         return keyOrder.filter { it.isNotNullOrBlank() }
     }
 
-    private fun createMappingTable(columns: List<ColumnProperties>, deleteRowButton: Boolean = false, tableHeightByNrOfRows: Int? = null, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
+    private fun createMappingTable(columns: List<ColumnProperties>, deleteRowButton: Boolean = false, tableHeightByNrOfRows: Int? = null, reorderRows: Boolean = false, dataModifier: ((data: MutableList<List<Any>>) -> Unit)? = null): TableComponent {
         val data: MutableList<List<Any>> = mutableListOf()
 
         dataModifier?.let {
@@ -201,7 +202,8 @@ class SettingsComponent(project: Project) {
             tableProperties = TableProperties(
                 rowHeight = 24,
                 deleteRowButton = deleteRowButton,
-                tableHeightByNrOfRows = tableHeightByNrOfRows
+                tableHeightByNrOfRows = tableHeightByNrOfRows,
+                reorderRowsWithDragAndDrop = reorderRows
             )
         )
     }
