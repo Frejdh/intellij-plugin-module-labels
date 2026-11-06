@@ -11,6 +11,7 @@ import com.intellij.ui.util.maximumHeight
 import com.intellij.util.ui.JBUI
 import java.awt.Component
 import java.awt.Dimension
+import java.awt.GraphicsEnvironment
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import javax.swing.*
@@ -87,7 +88,10 @@ class TableUtils {
 //            })
 
             tableProperties.reorderRowsWithDragAndDrop.ifTrue {
-                table.dragEnabled = true
+                // Throws in headless environments, such as when running tests
+                if (!GraphicsEnvironment.isHeadless()) {
+                    table.dragEnabled = true
+                }
                 table.dropMode = DropMode.INSERT_ROWS
                 val listener = ReorderTableRowMouseHandler(table, model)
                 table.addMouseListener(listener)

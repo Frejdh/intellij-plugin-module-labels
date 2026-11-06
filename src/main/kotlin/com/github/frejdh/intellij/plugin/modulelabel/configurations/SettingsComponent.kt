@@ -5,7 +5,6 @@ import com.github.frejdh.intellij.plugin.modulelabel.configurations.state.Mappin
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.state.SettingsState
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.*
 import com.github.frejdh.intellij.plugin.modulelabel.extensions.filterNotNullOrBlank
-import com.github.frejdh.intellij.plugin.modulelabel.extensions.ifFalse
 import com.github.frejdh.intellij.plugin.modulelabel.extensions.isNotNullOrBlank
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
@@ -108,7 +107,23 @@ class SettingsComponent(project: Project) {
         return panel
     }
 
-    private fun setLabelsInTableByMap(table: TableComponent, labelsMap: Map<String, String>, keepTargetColumnAsIs: Boolean = false, keyOrder: List<String>? = null) {
+    /**
+     * Set the labels of a table with a fixed set of rows. Rows without a label in the map are cleared.
+     */
+    private fun setLabelsForExistingRows(table: TableComponent, labelsMap: Map<String, String>) {
+        val targetColumnIndex = table.getTableColumnIndex(COLUMN_ID_TARGET)
+        val labelColumnIndex = table.getTableColumnIndex(COLUMN_LABEL)
+
+        for (row in 0 until table.dataModel.rowCount) {
+            val targetValue = table.dataModel.getValueAt(row, targetColumnIndex).toString()
+            table.dataModel.setValueAt(labelsMap[targetValue]?.trim() ?: "", row, labelColumnIndex)
+        }
+    }
+
+    /**
+     * Set both the targets and the labels of a table, adding rows when needed.
+     */
+    private fun setTargetsAndLabels(table: TableComponent, labelsMap: Map<String, String>, keyOrder: List<String>? = null) {
         val targetColumnIndex = table.getTableColumnIndex(COLUMN_ID_TARGET)
         val labelColumnIndex = table.getTableColumnIndex(COLUMN_LABEL)
         val nrOfRows = labelsMap.keys.filterNot { it.isBlank() }.size
@@ -118,16 +133,10 @@ class SettingsComponent(project: Project) {
             if (i >= table.dataModel.rowCount) {
                 table.dataModel.addRow(ALL_DIRECTORY_MAPPING_COLUMNS.map { "" }.toTypedArray())
             }
-            val targetValue: String = if (keepTargetColumnAsIs) {
-                table.dataModel.getValueAt(i, targetColumnIndex).toString()
-            } else {
-                keyOrder?.getOrNull(i) ?: mapKeys.getOrNull(i) ?: ""
-            }
+            val targetValue: String = keyOrder?.getOrNull(i) ?: mapKeys.getOrNull(i) ?: ""
             val labelValue: String? = labelsMap[targetValue]
             if (labelValue != null) {
-                keepTargetColumnAsIs.ifFalse {
-                    table.dataModel.setValueAt(targetValue.trim(), i, targetColumnIndex)
-                }
+                table.dataModel.setValueAt(targetValue.trim(), i, targetColumnIndex)
                 table.dataModel.setValueAt(labelValue.trim(), i, labelColumnIndex)
             }
         }
@@ -137,8 +146,8 @@ class SettingsComponent(project: Project) {
      * Set the user interface field values (coming from a persisted state)
      */
     fun setStateForView(newState: SettingsState) {
-        setLabelsInTableByMap(tableModuleMappingsComponent, newState.mappings.labelByModuleMap, keepTargetColumnAsIs = true)
-        setLabelsInTableByMap(tableDirectoryMappingsComponent, newState.mappings.labelByDirectoryMap, keepTargetColumnAsIs = false, keyOrder = newState.mappings.labelByDirectoryKeyOrder)
+        setLabelsForExistingRows(tableModuleMappingsComponent, newState.mappings.labelByModuleMap)
+        setTargetsAndLabels(tableDirectoryMappingsComponent, newState.mappings.labelByDirectoryMap, keyOrder = newState.mappings.labelByDirectoryKeyOrder)
     }
 
     /**
