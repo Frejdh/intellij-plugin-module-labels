@@ -1,7 +1,6 @@
 package com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing
 
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.CustomTableModel
-import com.github.frejdh.intellij.plugin.modulelabel.extensions.isTrue
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.util.preferredHeight
 import java.awt.Component
@@ -20,27 +19,13 @@ open class CustomTable(model: CustomTableModel = CustomTableModel(), columnModel
         }
     }
 
-    open val calculatedHeight: Int
-        get() {
-            // Height
-            val headerHeight = tableHeader.preferredHeight
-            val allRowsHeight = (rowHeight * rowCount)
-            val spacing = ceil(max(intercellSpacing.height, 0) * (rowCount + 1) * 0.5).toInt()
-
-            // TODO: Improve the calculation. For some reason this seems to be difficult to do consistently
-            val calculatedHeight = headerHeight + allRowsHeight + spacing + 1
-            return calculatedHeight
-        }
-
     open fun calculateHeight(nrOfRows: Int = rowCount): Int {
-        // Height
         val headerHeight = tableHeader.preferredHeight
-        val allRowsHeight = (rowHeight * nrOfRows)
+        val allRowsHeight = rowHeight * nrOfRows
         val spacing = ceil(max(intercellSpacing.height, 0) * (nrOfRows + 1) * 0.5).toInt()
 
         // TODO: Improve the calculation. For some reason this seems to be difficult to do consistently
-        val calculatedHeight = headerHeight + allRowsHeight + spacing + 1
-        return calculatedHeight
+        return headerHeight + allRowsHeight + spacing + 1
     }
 
 }
@@ -62,7 +47,7 @@ open class CustomTableRenderer : DefaultTableCellRenderer() {
         val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
 
         // Check if row selection is enabled
-        if (table?.rowSelectionAllowed.isTrue()) {
+        if (table?.rowSelectionAllowed == true) {
             // Row selection mode: use default behavior (whole row gets selection color)
             // The super call already handles this, so just return
             return component

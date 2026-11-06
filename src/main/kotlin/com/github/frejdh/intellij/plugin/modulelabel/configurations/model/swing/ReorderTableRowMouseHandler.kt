@@ -1,6 +1,6 @@
 package com.github.frejdh.intellij.plugin.modulelabel.configurations.model.swing
 
-import com.github.frejdh.intellij.plugin.modulelabel.extensions.isNull
+import java.awt.Point
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
 import java.awt.event.MouseMotionListener
@@ -17,13 +17,10 @@ open class ReorderTableRowMouseHandler(table: JTable, model: DefaultTableModel) 
     override fun mouseClicked(event: MouseEvent) {}
 
     override fun mousePressed(event: MouseEvent) {
-        val table: JTable = this.table.get() ?: return
-        val viewRowIndex = table.rowAtPoint(event.getPoint())
-        row = table.convertRowIndexToModel(viewRowIndex)
+        row = table.get()?.modelRowAt(event.point)
     }
 
     override fun mouseReleased(event: MouseEvent) {
-        println("Resetting row: $row")
         row = null
     }
 
@@ -32,22 +29,26 @@ open class ReorderTableRowMouseHandler(table: JTable, model: DefaultTableModel) 
     override fun mouseExited(event: MouseEvent) {}
 
     override fun mouseDragged(event: MouseEvent) {
-        println("Dragging row: ${this.row}")
         val table: JTable = table.get() ?: return
         val tableModel: DefaultTableModel = tableModel.get() ?: return
-        val row = this.row
+        val draggedRow = row ?: return
+        val targetRow = table.modelRowAt(event.point) ?: return
 
-        val viewRowIndex = table.rowAtPoint(event.getPoint())
-        val currentRow = table.convertRowIndexToModel(viewRowIndex)
-
-        if (row.isNull() || currentRow == row) {
+        if (targetRow == draggedRow) {
             return
         }
 
-        tableModel.moveRow(row, row, currentRow)
-        this.row = currentRow
-        table.setRowSelectionInterval(viewRowIndex, viewRowIndex)
+        tableModel.moveRow(draggedRow, draggedRow, targetRow)
+        row = targetRow
+        val targetViewRow = table.convertRowIndexToView(targetRow)
+        table.setRowSelectionInterval(targetViewRow, targetViewRow)
     }
 
     override fun mouseMoved(event: MouseEvent) {}
+
+    /**
+     * The model row at the [point], or `null` when the point is outside of all rows.
+     */
+    private fun JTable.modelRowAt(point: Point): Int? =
+        rowAtPoint(point).takeIf { it >= 0 }?.let(::convertRowIndexToModel)
 }

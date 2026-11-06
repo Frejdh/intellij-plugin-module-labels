@@ -52,12 +52,8 @@ dependencies {
         // Module Dependencies. Uses `platformBundledModules` property from the gradle.properties file for bundled IntelliJ Platform modules.
         bundledModules(providers.gradleProperty("platformBundledModules").map { it.split(',') })
 
-        testFramework(TestFrameworkType.Platform) // Required by the JUnit 5 frameworks: provides TestProjectManager and CodeInsightTestFixture
+        testFramework(TestFrameworkType.Platform) // Required by the JUnit 5 framework: provides TestProjectManager
         testFramework(TestFrameworkType.JUnit5)
-        testFramework(TestFrameworkType.JUnit5CodeInsight)
-
-        // XML support moved out of the core platform into a bundled plugin; MyPluginTest needs it.
-        testBundledPlugins("com.intellij.xml")
     }
 }
 
