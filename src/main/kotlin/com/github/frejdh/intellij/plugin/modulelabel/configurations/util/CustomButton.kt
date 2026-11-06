@@ -87,7 +87,6 @@ open class CustomButton(
             // Make it non-focusable to avoid keyboard navigation issues
             isFocusable = false
 
-            // FIXME: CAUSES RECURSIVE LOOP!
             // Set up click handlers, but only when not located inside the table
             if (tableModel == null) {
                 val actionListener: (ActionEvent) -> Unit = {
