@@ -79,10 +79,103 @@ class LabelTabEditorTest {
     }
 
     @Test
-    fun `file gets the label of a matching directory prefix`() = runOnEdt {
+    fun `file gets the label of its exact directory`() = runOnEdt {
         val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
 
-        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("backend/" to "DIR")))
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("backend/src/" to "DIR")))
+    }
+
+    @Test
+    fun `trailing slash is optional for an exact directory`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
+
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("backend/src" to "DIR")))
+    }
+
+    @Test
+    fun `directory includes all of its subdirectories`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/main/java/Main.java")
+
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("backend" to "DIR")))
+    }
+
+    @Test
+    fun `directory does not match a directory starting with the same name`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend-api", relativePath = "src/Main.java")
+
+        assertNull(titleFor(file, directoryMappings("backend" to "DIR")))
+    }
+
+    @Test
+    fun `directory does not match part of a directory name`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
+
+        assertNull(titleFor(file, directoryMappings("back" to "DIR")))
+    }
+
+    @Test
+    fun `directory does not match a parent directory`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
+
+        assertNull(titleFor(file, directoryMappings("backend/src/main" to "DIR")))
+    }
+
+    @Test
+    fun `lower rule applies to its directory and subdirectories`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/main/java/Main.java")
+
+        assertEquals(
+            "[MAIN] Main.java",
+            titleFor(file, directoryMappings("backend" to "BE", "backend/src/main" to "MAIN"))
+        )
+    }
+
+    @Test
+    fun `upper rule still applies outside of the directory of a lower rule`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/test/Main.java")
+
+        assertEquals(
+            "[BE] Main.java",
+            titleFor(file, directoryMappings("backend" to "BE", "backend/src/main" to "MAIN"))
+        )
+    }
+
+    @Test
+    fun `table order decides the rule rather than how specific it is`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/main/Main.java")
+
+        assertEquals(
+            "[BE] Main.java",
+            titleFor(file, directoryMappings("backend/src/main" to "MAIN", "backend" to "BE"))
+        )
+    }
+
+    @Test
+    fun `wildcard pattern includes subdirectories`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/deep/Main.java")
+
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("backend/.*" to "DIR")))
+    }
+
+    @Test
+    fun `pattern must match the whole directory`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
+
+        assertNull(titleFor(file, directoryMappings("src" to "DIR")))
+    }
+
+    @Test
+    fun `trailing slash is optional for a pattern`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
+
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings(".*/src" to "DIR")))
+    }
+
+    @Test
+    fun `backslashes in a pattern keep their regex meaning`() = runOnEdt {
+        val file = createFile(backend.get(), contentRoot = "backend", relativePath = "v2/Main.java")
+
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("backend/v\\d/" to "DIR")))
     }
 
     @Test
@@ -114,17 +207,17 @@ class LabelTabEditorTest {
     }
 
     @Test
-    fun `directory name that is an invalid pattern still matches as a prefix`() = runOnEdt {
+    fun `directory name that is an invalid pattern still matches exactly`() = runOnEdt {
         val file = createFile(backend.get(), contentRoot = "back(end", relativePath = "src/Main.java")
 
-        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("back(end/" to "DIR")))
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("back(end/src/" to "DIR")))
     }
 
     @Test
     fun `invalid pattern does not stop later rules from matching`() = runOnEdt {
         val file = createFile(backend.get(), contentRoot = "backend", relativePath = "src/Main.java")
 
-        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("src/(" to "BAD", "backend/" to "DIR")))
+        assertEquals("[DIR] Main.java", titleFor(file, directoryMappings("src/(" to "BAD", "backend/src/" to "DIR")))
     }
 
     @Test
@@ -133,8 +226,8 @@ class LabelTabEditorTest {
 
         val mappings = MappingsState(
             labelByModuleMap = mapOf("backend" to "BE"),
-            labelByDirectoryMap = mapOf("backend/" to "DIR"),
-            labelByDirectoryKeyOrder = listOf("backend/"),
+            labelByDirectoryMap = mapOf("backend/src/" to "DIR"),
+            labelByDirectoryKeyOrder = listOf("backend/src/"),
         )
 
         assertEquals("[DIR] Main.java", titleFor(file, mappings))
@@ -146,7 +239,7 @@ class LabelTabEditorTest {
 
         assertEquals(
             "[SECOND] Main.java",
-            titleFor(file, directoryMappings("backend/" to "FIRST", "backend/src/" to "SECOND"))
+            titleFor(file, directoryMappings("backend/.*" to "FIRST", "backend/src/" to "SECOND"))
         )
     }
 }

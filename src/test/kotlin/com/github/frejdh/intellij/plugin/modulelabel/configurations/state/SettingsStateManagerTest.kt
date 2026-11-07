@@ -40,6 +40,8 @@ class SettingsStateManagerTest {
         val restored = XmlSerializer.deserialize(element, SettingsState::class.java)
 
         assertEquals(listOf("z/", "a/"), restored.mappings.labelByDirectoryKeyOrder)
+        // The tab titles go through the map, where the last matching rule takes priority
+        assertEquals(listOf("z/", "a/"), restored.mappings.labelByDirectoryMap.keys.toList())
     }
 
     @Test

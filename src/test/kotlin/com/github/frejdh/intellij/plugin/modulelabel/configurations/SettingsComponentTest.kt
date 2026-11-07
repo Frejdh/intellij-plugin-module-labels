@@ -4,6 +4,7 @@ import com.github.frejdh.intellij.plugin.modulelabel.SettingsTables
 import com.github.frejdh.intellij.plugin.modulelabel.addRow
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.state.MappingsState
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.state.SettingsState
+import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.BrowseButtonColumn
 import com.github.frejdh.intellij.plugin.modulelabel.rows
 import com.github.frejdh.intellij.plugin.modulelabel.runOnEdt
 import com.github.frejdh.intellij.plugin.modulelabel.setLabel
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.awt.event.MouseEvent
 
 @TestApplication
 class SettingsComponentTest {
@@ -42,6 +44,25 @@ class SettingsComponentTest {
                 labelByDirectoryKeyOrder = labels.map { it.first },
             )
         )
+
+    @Test
+    fun `directory selected with the browse button ends up in the state`() = runOnEdt {
+        val component = SettingsComponent(project.get(), chooseDirectory = { "selected/" })
+        val directories = SettingsTables(component.panel).directories
+        val cell = directories.getCellRect(0, 0, false)
+        val click = MouseEvent(directories, MouseEvent.MOUSE_CLICKED, 0L, 0, cell.x + 1, cell.y + 1, 1, false, MouseEvent.BUTTON1)
+
+        directories.mouseListeners.filterIsInstance<BrowseButtonColumn>().single().mouseClicked(click)
+        directories.setLabel(target = "selected/", label = "S")
+
+        assertEquals(listOf("selected/"), component.getStateFromView().mappings.labelByDirectoryKeyOrder)
+        assertEquals(mapOf("selected/" to "S"), component.getStateFromView().mappings.labelByDirectoryMap)
+    }
+
+    @Test
+    fun `module names have no browse button`() = withComponent { _, tables ->
+        assertTrue(tables.modules.mouseListeners.filterIsInstance<BrowseButtonColumn>().isEmpty())
+    }
 
     @Test
     fun `module table lists all modules sorted by name`() = withComponent { _, tables ->

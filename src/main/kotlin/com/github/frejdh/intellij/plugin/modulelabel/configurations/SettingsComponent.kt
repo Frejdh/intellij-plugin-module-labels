@@ -5,6 +5,7 @@ import com.github.frejdh.intellij.plugin.modulelabel.configurations.state.Mappin
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.state.SettingsState
 import com.github.frejdh.intellij.plugin.modulelabel.configurations.util.*
 import com.github.frejdh.intellij.plugin.modulelabel.extensions.filterNotNullOrBlank
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.modules
@@ -12,9 +13,13 @@ import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.FormBuilder
 import javax.swing.JPanel
+import javax.swing.SwingConstants
 
 
-class SettingsComponent(project: Project) {
+class SettingsComponent(
+    project: Project,
+    chooseDirectory: (currentValue: String) -> String? = { chooseDirectoryMapping(project, it) }
+) {
     val panel: JPanel
     private val tableModuleMappingsComponent: TableComponent = createMappingTable(
         columns = ALL_MODULE_MAPPING_COLUMNS,
@@ -59,8 +64,15 @@ class SettingsComponent(project: Project) {
 
 
     init {
+        tableDirectoryMappingsComponent.installBrowseButton(
+            columnId = COLUMN_ID_TARGET,
+            tooltipText = Literals.message("settings.mapping.directory.browse"),
+            browse = chooseDirectory
+        )
+
         val introSection = FormBuilder.createFormBuilder()
             .addComponent(JBLabel(Literals.message("settings.intro.label")))
+            .addComponent(JBLabel(Literals.message("settings.intro.reopen-tabs"), AllIcons.General.Information, SwingConstants.LEADING), 6)
             .panel
 
         // Module section

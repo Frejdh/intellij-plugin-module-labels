@@ -39,10 +39,8 @@ class LabelTabEditor : EditorTabTitleProvider, DumbAware {
                 .addSuffix("/", addOnlyIfMissing = true)
 
             // Resolve by directory labels
-            directoryOrPatterns.forEach { (directoryOrPatternRaw, label) ->
-                val directoryOrPattern = directoryOrPatternRaw.replace("\\", "/")
-                // A directory name doesn't have to be a valid pattern, such as "foo(", so that's not an error
-                if (relativeDirectoryPath.startsWith(directoryOrPattern) || directoryOrPattern.toRegexOrNull()?.matches(relativeDirectoryPath) == true) {
+            directoryOrPatterns.forEach { (directoryOrPattern, label) ->
+                if (directoryOrPattern.matchesDirectory(relativeDirectoryPath)) {
                     candidates.add(label)
                 }
             }
@@ -54,6 +52,16 @@ class LabelTabEditor : EditorTabTitleProvider, DumbAware {
 
         // Keep default behavior
         return null
+    }
+
+    /**
+     * Whether the mapping is the [directory] or a parent of it, or a regex matching all of the [directory].
+     * The trailing slash is optional in both. It also makes "backend" not match "backend-api/", as whole names are compared.
+     * A directory name doesn't have to be a valid regex, such as "foo(", so that's not an error.
+     */
+    private fun String.matchesDirectory(directory: String): Boolean {
+        val isSameOrParent = directory.startsWith(replace("\\", "/").addSuffix("/", addOnlyIfMissing = true))
+        return isSameOrParent || toRegexOrNull()?.let { it.matches(directory) || it.matches(directory.removeSuffix("/")) } == true
     }
 
     private fun getModuleForFile(project: Project, file: VirtualFile): Module? =
