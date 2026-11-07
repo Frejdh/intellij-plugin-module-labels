@@ -1,0 +1,71 @@
+package com.frejdh.idea.plugin.modulelabels.tabeditor
+
+import com.frejdh.idea.plugin.modulelabels.configurations.state.SettingsStateManager
+import com.frejdh.idea.plugin.modulelabels.extensions.addSuffix
+import com.frejdh.idea.plugin.modulelabels.extensions.filterNotNullOrBlank
+import com.frejdh.idea.plugin.modulelabels.extensions.toRegexOrNull
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.impl.EditorTabTitleProvider
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.calcRelativeToProjectPath
+import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.util.Computable
+import com.intellij.openapi.vfs.VirtualFile
+import kotlin.io.path.absolutePathString
+
+
+class LabelTabEditor : EditorTabTitleProvider, DumbAware {
+    override fun getEditorTabTitle(project: Project, file: VirtualFile): String? {
+        val settings: SettingsStateManager = SettingsStateManager.getInstance(project)
+        val candidates = mutableListOf<String>()
+
+        val moduleForFile: Module? = getModuleForFile(project, file)
+        val moduleLabel: String? = settings.state.mappings.labelByModuleMap[moduleForFile?.name]
+
+        // Resolve by module label
+        if (!moduleLabel.isNullOrBlank()) {
+            candidates.add(moduleLabel)
+        }
+
+        val directoryOrPatterns: Map<String, String> = settings.state.mappings.labelByDirectoryMap.filterNotNullOrBlank()
+        if (directoryOrPatterns.isNotEmpty()) {
+            // Relative directory with forward slash in the suffix
+            val relativeDirectoryPath: String = calcRelativeToProjectPath(file, project, includeFilePath = true, keepModuleAlwaysOnTheLeft = false)
+                .replace("\\", "/")
+                .removePrefix("…/")
+                .replaceAfterLast("/", "")
+                .addSuffix("/", addOnlyIfMissing = true)
+
+            // Resolve by directory labels
+            directoryOrPatterns.forEach { (directoryOrPattern, label) ->
+                if (directoryOrPattern.matchesDirectory(relativeDirectoryPath)) {
+                    candidates.add(label)
+                }
+            }
+        }
+
+        if (candidates.isNotEmpty()) {
+            return "[${candidates.last()}] ${file.presentableName}"
+        }
+
+        // Keep default behavior
+        return null
+    }
+
+    /**
+     * Whether the mapping is the [directory] or a parent of it, or a regex matching all of the [directory].
+     * The trailing slash is optional in both. It also makes "backend" not match "backend-api/", as whole names are compared.
+     * A directory name doesn't have to be a valid regex, such as "foo(", so that's not an error.
+     */
+    private fun String.matchesDirectory(directory: String): Boolean {
+        val isSameOrParent = directory.startsWith(replace("\\", "/").addSuffix("/", addOnlyIfMissing = true))
+        return isSameOrParent || toRegexOrNull()?.let { it.matches(directory) || it.matches(directory.removeSuffix("/")) } == true
+    }
+
+    private fun getModuleForFile(project: Project, file: VirtualFile): Module? =
+        ApplicationManager.getApplication().runReadAction(Computable {
+            ProjectFileIndex.getInstance(project).getModuleForFile(file)
+        })
+}
