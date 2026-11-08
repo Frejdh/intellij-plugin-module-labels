@@ -2,5 +2,5 @@
 .idea
 .qodana
 build
-.intellijPlatform/*
+.intellijPlatform
 .kotlin
