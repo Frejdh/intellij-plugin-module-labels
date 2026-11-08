@@ -7,7 +7,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="src/main/resources/META-INF/pluginIcon_dark.svg" width="168">
   <source media="(prefers-color-scheme: light)" srcset="src/main/resources/META-INF/pluginIcon.svg" width="168">
-  <img alt="Logo color changing depending on theme" src="./src/main/resources/META-INF/pluginIcon_dark.svg" width="168" style="width:auto;">
+  <img alt="Logo color changing depending on theme" src="./src/main/resources/META-INF/pluginIcon_dark.svg" width="168" style="height:auto;">
 </picture>
 
 <!-- Plugin description -->
